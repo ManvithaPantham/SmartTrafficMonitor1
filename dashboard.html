@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Smart Traffic Monitoring Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:linear-gradient(to right,#e3f2fd,#fce4ec);
+margin:0;
+padding:0;
+}
+
+.header{
+background:white;
+padding:20px;
+font-size:28px;
+font-weight:bold;
+text-align:center;
+box-shadow:0 2px 8px rgba(0,0,0,0.2);
+}
+
+.container{
+padding:20px;
+}
+
+.cards{
+display:flex;
+gap:15px;
+flex-wrap:wrap;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:12px;
+flex:1;
+min-width:150px;
+text-align:center;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+transition:0.3s;
+}
+
+.card:hover{
+transform:scale(1.05);
+}
+
+.value{
+font-size:28px;
+font-weight:bold;
+color:#1976d2;
+}
+
+.chart-box{
+background:white;
+margin-top:20px;
+padding:20px;
+border-radius:12px;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+.camera-box{
+background:white;
+margin-top:20px;
+padding:20px;
+border-radius:12px;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+.signal{
+width:60px;
+height:60px;
+border-radius:50%;
+margin:auto;
+margin-top:10px;
+background:gray;
+}
+
+.signal-green{
+background:#00e676;
+box-shadow:0 0 20px #00e676;
+}
+
+.signal-yellow{
+background:#ffea00;
+box-shadow:0 0 20px #ffea00;
+}
+
+.signal-red{
+background:#ff1744;
+box-shadow:0 0 20px #ff1744;
+}
+
+.signal-text{
+margin-top:10px;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+Smart Traffic Monitoring System
+</div>
+
+<div class="container">
+
+<div class="cards">
+
+<div class="card">
+Total Vehicles
+<div id="total" class="value">0</div>
+</div>
+
+<div class="card">
+Cars
+<div id="cars" class="value">0</div>
+</div>
+
+<div class="card">
+Bikes
+<div id="bikes" class="value">0</div>
+</div>
+
+<div class="card">
+Buses
+<div id="buses" class="value">0</div>
+</div>
+
+<div class="card">
+Trucks
+<div id="trucks" class="value">0</div>
+</div>
+
+<div class="card">
+Traffic Signal
+
+<div id="signal" class="signal"></div>
+
+<div id="signalText" class="signal-text">
+Loading...
+</div>
+
+</div>
+
+</div>
+
+<div class="chart-box">
+
+<h3>Vehicle Count Analytics</h3>
+
+<canvas id="chart"></canvas>
+
+</div>
+
+<div class="camera-box">
+
+<h3>Live Traffic Camera</h3>
+<img src="http://localhost:5001/video"
+     width="100%"
+     style="border-radius:10px;">
+</div>
+
+</div>
+
+<script>
+
+let chart;
+
+async function loadData(){
+
+let res = await fetch("http://127.0.0.1:5000/data");
+
+let data = await res.json();
+
+if(data.length==0) return;
+
+let latest = data[data.length-1];
+
+// update vehicle counts
+document.getElementById("total").innerText = latest.vehicle_count;
+document.getElementById("cars").innerText = latest.cars;
+document.getElementById("bikes").innerText = latest.bikes;
+document.getElementById("buses").innerText = latest.buses;
+document.getElementById("trucks").innerText = latest.trucks;
+
+// traffic signal logic
+let signal = document.getElementById("signal");
+let signalText = document.getElementById("signalText");
+
+signal.className = "signal";
+
+if(latest.vehicle_count <= 3){
+
+signal.classList.add("signal-green");
+signalText.innerText = "GREEN - Low Traffic";
+
+}
+else if(latest.vehicle_count <= 6){
+
+signal.classList.add("signal-yellow");
+signalText.innerText = "YELLOW - Medium Traffic";
+
+}
+else{
+
+signal.classList.add("signal-red");
+signalText.innerText = "RED - High Traffic";
+
+}
+
+// graph
+let counts = data.map(x=>x.vehicle_count);
+let labels = data.map((x,i)=>i+1);
+
+if(chart) chart.destroy();
+
+chart = new Chart(document.getElementById("chart"),{
+
+type:"line",
+
+data:{
+labels:labels,
+datasets:[{
+label:"Vehicle Count",
+data:counts,
+borderColor:"#1976d2",
+backgroundColor:"rgba(25,118,210,0.2)",
+fill:true,
+tension:0.4
+}]
+}
+
+});
+
+}
+
+loadData();
+
+setInterval(loadData,3000);
+
+</script>
+
+</body>
+</html>
